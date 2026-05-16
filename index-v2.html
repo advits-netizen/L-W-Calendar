@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Love & War Campaign</title>
+<link href="https://api.fontshare.com/v2/css?f[]=zodiak@400,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:       #D4A017;
+  --gold-light: #F5C842;
+  --gold-dark:  #A07810;
+  --gold-pale:  #FDF3D0;
+  --red:        #8B0000;
+  --red-mid:    #B22222;
+  --red-deep:   #5C0000;
+  --font-display: 'Zodiak', Georgia, serif;
+  --font-body:    'Satoshi', 'Helvetica Neue', sans-serif;
+  --radius-sm: 4px;
+  --radius-lg: 14px;
+  --trans: 180ms cubic-bezier(0.16,1,0.3,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); background: #F5EDE0; color: #2A0000; min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+
+/* HEADER */
+header { background: var(--red-deep); border-bottom: 3px solid var(--gold); text-align: center; }
+.header-gold-bar { height: 5px; background: linear-gradient(90deg, transparent 0%, var(--gold) 20%, var(--gold-light) 50%, var(--gold) 80%, transparent 100%); }
+.header-inner { padding: 28px 40px 22px; }
+header h1 { font-family: var(--font-display); font-size: clamp(1.9rem, 4.5vw, 3.2rem); font-weight: 700; color: var(--gold-light); letter-spacing: 0.07em; text-transform: uppercase; }
+header p { font-size: 0.85rem; color: var(--gold-pale); margin-top: 6px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
+
+/* SYNC STATUS */
+.sync-bar { background: #FFF0D8; border-bottom: 1px solid rgba(212,160,23,0.3); padding: 6px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.sync-status { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; transition: background 0.3s; }
+.sync-dot.live { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+.sync-dot.saving { background: var(--gold); }
+.sync-dot.error { background: #ef4444; }
+
+/* PHASE LEGEND */
+.phase-legend { background: #FFF0D8; border-bottom: 1px solid rgba(212,160,23,0.3); display: flex; flex-wrap: wrap; }
+.phase-item { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: #5C0000; letter-spacing: 0.07em; text-transform: uppercase; font-weight: 600; padding: 10px 22px; border-right: 1px solid rgba(212,160,23,0.2); flex: 1; justify-content: center; }
+.phase-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
+
+/* CALENDAR GRID */
+.calendar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; padding: 28px 32px 48px; max-width: 2400px; margin: 0 auto; }
+
+/* MONTH CARD */
+.month-card { background: #FFFAF4; border: 1px solid rgba(139,0,0,0.2); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 2px 12px rgba(139,0,0,0.08); display: flex; flex-direction: column; }
+.month-header { background: var(--red); border-bottom: 2px solid var(--gold-dark); padding: 16px 20px 14px; }
+.month-header-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.month-name { font-family: var(--font-display); font-size: clamp(1.1rem, 2vw, 1.6rem); font-weight: 700; color: var(--gold-light); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; }
+.month-meta { font-size: 0.68rem; color: rgba(253,243,208,0.75); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; text-align: right; }
+.dow-row { display: grid; grid-template-columns: repeat(7, 1fr); background: #FFF5E0; border-bottom: 1px solid rgba(139,0,0,0.12); }
+.dow-cell { text-align: center; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); padding: 6px 2px 5px; }
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex: 1; }
+.day-cell { min-height: 96px; border-right: 1px solid rgba(139,0,0,0.08); border-bottom: 1px solid rgba(139,0,0,0.08); padding: 6px 5px 5px; display: flex; flex-direction: column; position: relative; transition: background var(--trans); background: #FFFAF4; cursor: pointer; }
+.day-cell:nth-child(7n) { border-right: none; }
+.day-cell.empty { background: #F8EEE0; cursor: default; pointer-events: none; }
+.day-cell:not(.empty):hover { background: #FFF0D0; }
+.day-cell.release-week { background: #FFF8E0 !important; }
+.day-cell.release-week:hover { background: #FFF0C0 !important; }
+.day-cell.release-day { background: #FFF0A0 !important; border: 2px solid var(--gold) !important; z-index: 3; }
+.day-cell.has-event { background: #FFF5D8 !important; }
+.day-cell.has-event:hover { background: #FFE8B0 !important; }
+.day-number { font-size: 0.88rem; font-weight: 700; color: #6B0000; line-height: 1; margin-bottom: 3px; }
+.day-cell.empty .day-number { color: #C4A88A; }
+.day-cell.release-day .day-number { color: var(--gold-dark); font-size: 0.9rem; }
+.release-badge { display: inline-block; background: var(--gold); color: #1A0000; font-size: 0.48rem; font-weight: 700; text-transform: uppercase; padding: 1px 4px; border-radius: 2px; margin-bottom: 2px; }
+.day-key-title { font-size: 0.68rem; color: rgba(90,0,0,0.65); line-height: 1.3; word-break: break-word; }
+.day-cell.has-event .day-key-title { color: #6B0000; font-weight: 600; }
+.day-cost-label { font-size: 0.55rem; font-weight: 700; color: var(--gold-dark); background: rgba(212,160,23,0.18); border-radius: 2px; padding: 1px 4px; margin-top: 2px; display: inline-block; }
+.event-dot { width: 5px; height: 5px; background: var(--gold-dark); border-radius: 50%; position: absolute; bottom: 5px; right: 5px; }
+
+/* MONTH COST FOOTER */
+.month-cost-footer { border-top: 2px solid var(--gold-dark); background: linear-gradient(90deg, var(--red-deep) 0%, #3A0000 100%); padding: 8px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.month-cost-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-light); white-space: nowrap; flex-shrink: 0; }
+.month-cost-input-wrap { display: flex; align-items: center; flex: 1; }
+.month-cost-symbol { background: rgba(212,160,23,0.25); border: 1px solid rgba(212,160,23,0.4); border-right: none; border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding: 4px 7px; font-size: 0.78rem; font-weight: 700; color: var(--gold-light); line-height: 1.6; flex-shrink: 0; }
+.month-cost-input { background: rgba(255,255,255,0.08); border: 1px solid rgba(212,160,23,0.4); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--gold-pale); font-family: var(--font-body); font-size: 0.78rem; font-weight: 600; padding: 4px 8px; width: 100%; outline: none; transition: border-color var(--trans), background var(--trans); }
+.month-cost-input::placeholder { color: rgba(253,243,208,0.35); }
+.month-cost-input:focus { border-color: var(--gold); background: rgba(255,255,255,0.13); }
+
+/* WEEK COST ROW */
+.week-cost-row {
+  border-top: 1px solid rgba(139,0,0,0.12);
+  background: linear-gradient(90deg, rgba(212,160,23,0.08) 0%, rgba(212,160,23,0.03) 100%);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.week-cost-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 55px;
+}
+.week-cost-value {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--red-deep);
+  flex: 1;
+}
+.week-cost-value.empty {
+  color: rgba(139,0,0,0.25);
+  font-weight: 500;
+}
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(80,0,0,0.45); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 220ms ease; }
+.modal-overlay.active { opacity: 1; pointer-events: all; }
+.modal { background: #FFFAF4; border: 1px solid rgba(139,0,0,0.25); border-radius: var(--radius-lg); box-shadow: 0 20px 60px rgba(80,0,0,0.25); max-width: 460px; width: 100%; max-height: 80vh; overflow-y: auto; transform: translateY(10px) scale(0.97); transition: transform 220ms cubic-bezier(0.16,1,0.3,1); }
+.modal-overlay.active .modal { transform: translateY(0) scale(1); }
+.modal-header { background: var(--red); border-bottom: 2px solid var(--gold-dark); padding: 18px 20px 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.modal-date { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: var(--gold-light); }
+.modal-month-label { font-size: 0.7rem; color: rgba(253,243,208,0.75); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.modal-close { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--gold-pale); width: 30px; height: 30px; border-radius: var(--radius-sm); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background var(--trans); }
+.modal-close:hover { background: rgba(255,255,255,0.2); }
+.event-item { padding: 14px 20px; border-bottom: 1px solid rgba(139,0,0,0.08); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.event-item-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: #3A0000; margin-bottom: 4px; }
+.event-item-desc { font-size: 0.85rem; color: #6B4040; line-height: 1.55; }
+.event-item-cost { display: inline-flex; align-items: center; gap: 4px; background: rgba(212,160,23,0.18); border: 1px solid rgba(212,160,23,0.4); border-radius: 4px; padding: 2px 8px; font-size: 0.78rem; font-weight: 700; color: var(--gold-dark); margin-top: 5px; }
+.event-delete-btn { background: none; border: none; color: rgba(180,60,60,0.4); cursor: pointer; font-size: 0.8rem; flex-shrink: 0; padding: 2px 4px; border-radius: 3px; transition: color var(--trans); }
+.event-delete-btn:hover { color: #C00; }
+.modal-empty { padding: 28px 20px; text-align: center; color: rgba(90,0,0,0.45); font-size: 0.85rem; }
+.modal-empty-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.35; }
+.modal-add-event { padding: 16px 20px 20px; border-top: 1px solid rgba(139,0,0,0.1); background: #FFF5E8; }
+.modal-add-event label { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 5px; }
+.modal-add-event input, .modal-add-event textarea { width: 100%; background: #FFF; border: 1px solid rgba(139,0,0,0.2); border-radius: var(--radius-sm); color: #2A0000; font-family: var(--font-body); font-size: 0.87rem; padding: 8px 11px; margin-bottom: 10px; resize: vertical; transition: border-color var(--trans); outline: none; }
+.modal-add-event input:focus, .modal-add-event textarea:focus { border-color: var(--red); }
+.cost-input-row { display: flex; align-items: center; margin-bottom: 10px; }
+.cost-currency { background: rgba(139,0,0,0.08); border: 1px solid rgba(139,0,0,0.2); border-right: none; border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding: 8px 10px; font-size: 0.87rem; font-weight: 700; color: var(--red); line-height: 1; flex-shrink: 0; }
+.cost-input-row input { margin-bottom: 0 !important; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-left: none; }
+.btn-add-event { background: var(--red); color: var(--gold-pale); border: none; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 9px 20px; cursor: pointer; transition: background var(--trans); width: 100%; }
+.btn-add-event:hover { background: var(--red-mid); }
+
+footer { text-align: center; padding: 16px 40px 28px; border-top: 1px solid rgba(139,0,0,0.12); background: #F5EDE0; }
+footer p { font-size: 0.7rem; color: rgba(90,0,0,0.35); letter-spacing: 0.1em; text-transform: uppercase; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F5EDE0; }
+::-webkit-scrollbar-thumb { background: rgba(139,0,0,0.25); border-radius: 3px; }
+
+/* CONFIG SCREEN */
+.config-screen { position: fixed; inset: 0; background: #F5EDE0; z-index: 999; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.config-card { background: #FFFAF4; border: 1px solid rgba(139,0,0,0.2); border-radius: var(--radius-lg); box-shadow: 0 8px 40px rgba(139,0,0,0.12); max-width: 520px; width: 100%; overflow: hidden; }
+.config-header { background: var(--red-deep); border-bottom: 2px solid var(--gold-dark); padding: 24px 28px; }
+.config-header h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--gold-light); letter-spacing: 0.05em; text-transform: uppercase; }
+.config-header p { font-size: 0.78rem; color: rgba(253,243,208,0.7); margin-top: 4px; line-height: 1.5; }
+.config-body { padding: 24px 28px 28px; }
+.config-body label { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; margin-top: 16px; }
+.config-body label:first-child { margin-top: 0; }
+.config-body input { width: 100%; background: #FFF; border: 1px solid rgba(139,0,0,0.2); border-radius: var(--radius-sm); color: #2A0000; font-family: var(--font-body); font-size: 0.87rem; padding: 9px 12px; outline: none; transition: border-color var(--trans); }
+.config-body input:focus { border-color: var(--red); }
+.config-hint { font-size: 0.72rem; color: rgba(90,0,0,0.5); margin-top: 5px; line-height: 1.5; }
+.config-hint a { color: var(--red); }
+.btn-connect { background: var(--red); color: var(--gold-pale); border: none; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 11px 24px; cursor: pointer; transition: background var(--trans); width: 100%; margin-top: 20px; }
+.btn-connect:hover { background: var(--red-mid); }
+.config-error { background: rgba(200,0,0,0.08); border: 1px solid rgba(200,0,0,0.2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8rem; color: #800; margin-top: 12px; display: none; }
+.config-error.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- CONFIG SCREEN REMOVED -->
+
+<!-- MAIN APP (hidden until Firebase connected) -->
+
+  <header>
+    <div class="header-gold-bar"></div>
+    <div class="header-inner">
+      <h1>Love &amp; War Campaign</h1>
+      <p>June 2026 &nbsp;·&nbsp; Countdown to Release Week · Jan 21, 2027 &nbsp;·&nbsp; February 2027</p>
+    </div>
+    <div class="header-gold-bar"></div>
+  </header>
+
+  <div class="sync-bar">
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">Connecting...</span>
+    </div>
+    <span style="font-size:0.7rem;color:#5C0000;opacity:0.6">Changes sync instantly for all collaborators</span>
+  </div>
+
+  <div class="phase-legend">
+    <div class="phase-item"><div class="phase-dot" style="background:#9B0000"></div>Phase I &nbsp;Jun – Jul</div>
+    <div class="phase-item"><div class="phase-dot" style="background:#C05000"></div>Phase II &nbsp;Aug – Oct</div>
+    <div class="phase-item"><div class="phase-dot" style="background:#7A0000"></div>Phase III &nbsp;Nov – Jan</div>
+    <div class="phase-item"><div class="phase-dot" style="background:#4A0000"></div>Phase IV &nbsp;Feb</div>
+    <div class="phase-item"><div class="phase-dot" style="background:#D4A017"></div>★ Release Week &nbsp;Jan 18–24</div>
+  </div>
+
+  <div class="calendar-grid" id="calendarGrid"></div>
+
+  <footer><p>Love &amp; War Campaign &nbsp;·&nbsp; Click any date to add or view events &nbsp;·&nbsp; All changes sync live</p></footer>
+
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-date" id="modalDateTitle"></div>
+        <div class="modal-month-label" id="modalMonthLabel"></div>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div id="modalContent"></div>
+    <div class="modal-add-event">
+      <label>Event Title</label>
+      <input type="text" id="eventTitleInput" placeholder="e.g. Press release, social push...">
+      <label>Description</label>
+      <textarea id="eventDescInput" rows="3" placeholder="Add details..."></textarea>
+      <label>Cost</label>
+      <div class="cost-input-row">
+        <span class="cost-currency">₹</span>
+        <input type="number" id="eventCostInput" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <button class="btn-add-event" id="btnSaveEvent">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const MONTHS = [
+  { name:'June',      year:2026, phase:'I' },
+  { name:'July',      year:2026, phase:'I' },
+  { name:'August',    year:2026, phase:'II' },
+  { name:'September', year:2026, phase:'II' },
+  { name:'October',   year:2026, phase:'II' },
+  { name:'November',  year:2026, phase:'III' },
+  { name:'December',  year:2026, phase:'III' },
+  { name:'January',   year:2027, phase:'III' },
+  { name:'February',  year:2027, phase:'IV' },
+];
+const MONTH_JS = { June:5,July:6,August:7,September:8,October:9,November:10,December:11,January:0,February:1 };
+
+let db = null;
+let allData = { events: {}, monthCosts: {} };
+let currentKey = null;
+
+// ── FIREBASE INIT ─────────────────────────────────────────────────────────────
+// PASTE YOUR FIREBASE CONFIG HERE (from Step 2 of setup)
+const firebaseConfig = {
+  apiKey: "AIzaSyDO7oFe3jytCvQrB7pjKyFSr8xNR3jFiho",
+  authDomain: "http://love-and-war-57b1a.firebaseapp.com/",
+  projectId: "love-and-war-57b1a",
+  appId: "1:196125239028:web:5402251da32a13a81120a1"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+db = getDatabase(app);
+setSyncStatus('connecting');
+
+// Listen to campaign data in real time
+const dataRef = ref(db, 'campaign');
+onValue(dataRef, (snapshot) => {
+  allData = snapshot.val() || { events: {}, monthCosts: {}, weekCosts: {} };
+  if (!allData.events) allData.events = {};
+  if (!allData.monthCosts) allData.monthCosts = {};
+  if (!allData.weekCosts) allData.weekCosts = {};
+  setSyncStatus('live');
+  renderCalendar();
+  if (currentKey && document.getElementById('modalOverlay').classList.contains('active')) {
+    renderModalContent(currentKey);
+  }
+}, (err) => { setSyncStatus('error'); });
+
+// ── SYNC STATUS ───────────────────────────────────────────────────────────────
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  dot.className = 'sync-dot';
+  if (state === 'live')       { dot.classList.add('live');   lbl.textContent = 'Live — syncing in real time'; }
+  else if (state === 'saving'){ dot.classList.add('saving'); lbl.textContent = 'Saving...'; }
+  else if (state === 'error') { dot.classList.add('error');  lbl.textContent = 'Connection error'; }
+  else                        {                              lbl.textContent = 'Connecting...'; }
+}
+
+async function saveToFirebase(path, value) {
+  setSyncStatus('saving');
+  await set(ref(db, path), value);
+}
+async function removeFromFirebase(path) {
+  setSyncStatus('saving');
+  await remove(ref(db, path));
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function daysInMonth(m,y) { return new Date(y, MONTH_JS[m]+1, 0).getDate(); }
+function firstDOW(m,y)    { return (new Date(y, MONTH_JS[m], 1).getDay()+6)%7; }
+function dateKey(m,y,d)   { const mi=MONTH_JS[m]+1; return `${y}-${String(mi).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function isRelDay(m,y,d)  { return m==='January'&&y===2027&&d===21; }
+function isRelWeek(m,y,d) { return m==='January'&&y===2027&&d>=18&&d<=24; }
+function formatCost(val)  {
+  const n = parseFloat(val); if (isNaN(n)||n<0) return null;
+  return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── RENDER CALENDAR ───────────────────────────────────────────────────────────
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+
+  MONTHS.forEach(({name,year,phase}) => {
+    const card = document.createElement('div'); card.className = 'month-card';
+
+    // Header
+    const hdr = document.createElement('div'); hdr.className = 'month-header';
+    const hdrRow = document.createElement('div'); hdrRow.className = 'month-header-row';
+    hdrRow.innerHTML = `<span class="month-name">${name}</span><span class="month-meta">${year} · Phase ${phase}</span>`;
+    hdr.appendChild(hdrRow); card.appendChild(hdr);
+
+    // DOW
+    const dow = document.createElement('div'); dow.className = 'dow-row';
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+      const c = document.createElement('div'); c.className='dow-cell'; c.textContent=d; dow.appendChild(c);
+    });
+    card.appendChild(dow);
+
+    // Days
+    const daysGrid = document.createElement('div'); daysGrid.className = 'days-grid';
+    const total = daysInMonth(name,year), offset = firstDOW(name,year);
+    for (let i=0;i<offset;i++) { const e=document.createElement('div'); e.className='day-cell empty'; daysGrid.appendChild(e); }
+
+    for (let day=1;day<=total;day++) {
+      const key = dateKey(name,year,day);
+      const cell = document.createElement('div'); cell.className='day-cell';
+      const rDay=isRelDay(name,year,day), rWeek=isRelWeek(name,year,day);
+      const hasEv = allData.events[key] && allData.events[key].length > 0;
+      if (rDay) cell.classList.add('release-day');
+      else if (rWeek) cell.classList.add('release-week');
+      if (hasEv) cell.classList.add('has-event');
+
+      const num = document.createElement('div'); num.className='day-number'; num.textContent=day; cell.appendChild(num);
+      if (rDay) { const b=document.createElement('div'); b.className='release-badge'; b.textContent='★ Release'; cell.appendChild(b); }
+
+      const titleEl = document.createElement('div'); titleEl.className='day-key-title';
+      if (hasEv) titleEl.textContent = allData.events[key][0].title;
+      cell.appendChild(titleEl);
+
+      if (hasEv && allData.events[key][0].cost) {
+        const cl=document.createElement('div'); cl.className='day-cost-label';
+        cl.textContent=formatCost(allData.events[key][0].cost); cell.appendChild(cl);
+      }
+      if (hasEv) { const dot=document.createElement('div'); dot.className='event-dot'; cell.appendChild(dot); }
+
+      cell.addEventListener('click', () => openModal(name,year,day,key));
+      daysGrid.appendChild(cell);
+    }
+
+    const used=offset+total, rem=used%7;
+    if (rem!==0) { for(let i=0;i<7-rem;i++){const e=document.createElement('div');e.className='day-cell empty';daysGrid.appendChild(e);} }
+    card.appendChild(daysGrid);
+
+    // Cost footer
+    const cf=document.createElement('div'); cf.className='month-cost-footer';
+    const cl=document.createElement('div'); cl.className='month-cost-label'; cl.textContent='Cost';
+    const cw=document.createElement('div'); cw.className='month-cost-input-wrap';
+    const cs=document.createElement('span'); cs.className='month-cost-symbol'; cs.textContent='₹';
+    const ci=document.createElement('input'); ci.type='number'; ci.className='month-cost-input';
+    ci.placeholder='Enter total cost...'; ci.min='0'; ci.step='0.01';
+    const mKey=name+'-'+year;
+    if (allData.monthCosts[mKey]!==undefined) ci.value=allData.monthCosts[mKey];
+    ci.addEventListener('change', () => saveToFirebase(`campaign/monthCosts/${mKey}`, ci.value));
+    ci.addEventListener('click', e=>e.stopPropagation());
+    cw.appendChild(cs); cw.appendChild(ci);
+    cf.appendChild(cl); cf.appendChild(cw); card.appendChild(cf);
+
+    grid.appendChild(card);
+  });
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(month,year,day,key) {
+  currentKey=key;
+  document.getElementById('modalDateTitle').textContent=`${day} ${month} ${year}`;
+  const phase=MONTHS.find(m=>m.name===month&&m.year===year)?.phase||'';
+  document.getElementById('modalMonthLabel').textContent =
+    isRelDay(month,year,day)  ? '★ RELEASE DAY — January 21, 2027' :
+    isRelWeek(month,year,day) ? 'Release Week — Jan 18 to 24' : `Phase ${phase}`;
+  renderModalContent(key);
+  document.getElementById('eventTitleInput').value='';
+  document.getElementById('eventDescInput').value='';
+  document.getElementById('eventCostInput').value='';
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function renderModalContent(key) {
+  const el=document.getElementById('modalContent');
+  const evs=allData.events[key]||[];
+  if (!evs.length) {
+    el.innerHTML=`<div class="modal-empty"><div class="modal-empty-icon">📋</div><p>No events yet — add one below.</p></div>`;
+  } else {
+    el.innerHTML=evs.map((ev,i)=>`
+      <div class="event-item">
+        <div style="flex:1">
+          <div class="event-item-title">${esc(ev.title)}</div>
+          ${ev.desc?`<div class="event-item-desc">${esc(ev.desc)}</div>`:''}
+          ${ev.cost?`<div class="event-item-cost">💰 ${esc(formatCost(ev.cost))}</div>`:''}
+        </div>
+        <button class="event-delete-btn" data-key="${key}" data-idx="${i}">✕</button>
+      </div>`).join('');
+    el.querySelectorAll('.event-delete-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>delEvent(btn.dataset.key, parseInt(btn.dataset.idx)));
+    });
+  }
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); currentKey=null; }
+
+async function saveEvent() {
+  const title=document.getElementById('eventTitleInput').value.trim();
+  const desc =document.getElementById('eventDescInput').value.trim();
+  const cost =document.getElementById('eventCostInput').value.trim();
+  if (!title||!currentKey) return;
+  const evs=[...(allData.events[currentKey]||[])];
+  evs.push({title,desc,cost:cost||null});
+  await saveToFirebase(`campaign/events/${currentKey}`, evs);
+}
+
+async function delEvent(key,idx) {
+  const evs=[...(allData.events[key]||[])];
+  evs.splice(idx,1);
+  if (evs.length) await saveToFirebase(`campaign/events/${key}`, evs);
+  else await removeFromFirebase(`campaign/events/${key}`);
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target===document.getElementById('modalOverlay')) closeModal(); });
+document.getElementById('btnSaveEvent').addEventListener('click', saveEvent);
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+  if(e.key==='Enter'&&document.getElementById('modalOverlay').classList.contains('active')&&document.activeElement.id!=='eventDescInput') saveEvent();
+});
+</script>
+</body>
+</html>
